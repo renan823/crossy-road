@@ -28,7 +28,8 @@ int NewSocket(void) {
 }
 
 /*
- * 
+ * Cria um novo "SocketAddress", inicializando
+ * com dados da conexão: porta e tipo de endereço.
  */
 SocketAddress *NewSocketAdress(int port) {
 	SocketAddress *address = (SocketAddress*) malloc(sizeof(SocketAddress));
@@ -49,7 +50,9 @@ SocketAddress *NewSocketAdress(int port) {
 }
 
 /*
- * 
+ * Retorna, de forma formata, a string
+ * correspondente ao endereço de IP e 
+ * porta de um "SocketAddress" informado.
  */
 char *GetSocketAddressInfo(SocketAddress *address) {
 	if (address == NULL) {

@@ -202,7 +202,7 @@ void ServerListen(Server *server) {
         /*
          * Lida com a requisição do cliente
          * criando uma nova thread para isso.
-         * Cada conexão = nova thread.
+         * Nova conexão = nova thread.
          *
          * No "ServerHandler" são passados dados
          * e tbm a parte de gerenciar o contexto
