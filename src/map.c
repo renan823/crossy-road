@@ -20,16 +20,21 @@ GameMap *LoadMap(char *name) {
 	}
 	
 	// Ler dados do map
+	
+	// Ler nome do mapa
 	if (fread(map->name, sizeof(char), MAP_NAME_SIZE, file) <= 0) {
 		fclose(file);
 		return NULL;
 	}
 	
+	// Ler os tiles
 	if (fread(map->tiles, sizeof(GameMapTile), MAP_HEIGTH, file) <= 0) {
 		fclose(file);
 		return NULL;
-	
 	}
+	
+	// Ler numero de inimigos e inimigos
+	//
 		
 	fclose(file);
 	
