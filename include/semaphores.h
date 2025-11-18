@@ -2,7 +2,7 @@
 #define SEMAPHORES_H_
 
 /*
- * Definições d etipos e funções para
+ * Definições de tipos e funções para
  * a biblioteca de semáforos.
  */
 

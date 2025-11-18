@@ -3,13 +3,18 @@
 
 #include "object.h"
 
+/*
+ * Definições dos tipos e funções
+ * para manipular mapas do jogo.
+ */
+
 #define MAP_WIDTH 20
 #define MAP_HEIGTH 30
 #define MAP_TILE_SIZE 2
 #define MAP_NAME_SIZE 50
 
 /*
- * Define o tipo de "chão" que palyer está.
+ * Define o tipo de "chão" que player está.
  *
  * "River" é o único chão que
  * não poder ser pisado -> game over.

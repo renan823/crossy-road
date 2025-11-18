@@ -5,6 +5,11 @@
 
 #include "semaphores.h"
 
+/*
+ * Definições dos tipos e funções
+ * para a biblioteca de servidores TCP.
+ */
+
 typedef void ServerHandler(int, Semaphore*, void*);
 
 typedef struct server Server;
