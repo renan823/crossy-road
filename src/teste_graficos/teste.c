@@ -1,6 +1,7 @@
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 // Tela
 #define WINDOW_WIDTH 600
@@ -11,6 +12,10 @@
 #define NUM_COLS (WINDOW_WIDTH / TILE_SIZE)
 
 #define PLAYER_SIZE 20 
+
+// Dimensões do Carro
+#define CAR_WIDTH 22
+#define CAR_HEIGHT 45
 
 // Identificação terreno
 #define TERRAIN_GRASS 0
@@ -28,7 +33,49 @@ typedef struct {
     float r, g, b; // Cor
 } Player;
 
+// Estrutura para os carros
+typedef struct {
+    float x, y;
+    float width, height;
+    float r, g, b;
+    int active;
+} Car;
+
 Player p1, p2;
+Car cars[100]; // Limite arbitrário de carros
+int total_cars = 0;
+
+// Função para gerar os carros no asfalto
+void spawnCars() {
+    total_cars = 0;
+    srand(time(NULL)); // Inicializa a semente aleatória
+
+    for (int i = 0; i < NUM_COLS; i++) {
+        // Apenas gera carros se o terreno for asfalto
+        if (map_layout[i] == TERRAIN_ASPHALT) {
+            
+            // Cria 2 carros por faixa
+            for (int k = 0; k < 2; k++) {
+                Car *c = &cars[total_cars];
+                
+                // Centraliza na faixa horizontalmente
+                c->x = (i * TILE_SIZE) + ((TILE_SIZE - CAR_WIDTH) / 2.0);
+                
+                // Posição vertical aleatória
+                c->y = rand() % (WINDOW_HEIGHT - CAR_HEIGHT);
+                
+                c->width = CAR_WIDTH;
+                c->height = CAR_HEIGHT;
+                c->active = 1;
+
+                // Cor vermelha
+                c->r = 1.0; c->g = 0.0; c->b = 0.0; 
+
+                total_cars++;
+            }
+        }
+    }
+}
 
 // Função de inicialização da janela do OpenGL
 void init() {
@@ -41,6 +88,9 @@ void init() {
     glLoadIdentity();
     gluOrtho2D(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT);
     glMatrixMode(GL_MODELVIEW);
+
+    // Gera os carros
+    spawnCars();
 }
 
 // --- Funções Auxiliares de Desenho ---
@@ -95,7 +145,15 @@ void display() {
         }
     }
 
-    // 2. Desenhar os Jogadores
+    // 2. Desenhar Carros (Novo)
+    for (int i = 0; i < total_cars; i++) {
+        if (cars[i].active) {
+            drawRect(cars[i].x, cars[i].y, cars[i].width, cars[i].height, 
+                     cars[i].r, cars[i].g, cars[i].b);
+        }
+    }
+
+    // 3. Desenhar os Jogadores (Renumerado)
     drawRect(p1.x, p1.y, PLAYER_SIZE, PLAYER_SIZE, p1.r, p1.g, p1.b);
     drawRect(p2.x, p2.y, PLAYER_SIZE, PLAYER_SIZE, p2.r, p2.g, p2.b);
 
