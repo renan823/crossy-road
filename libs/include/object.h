@@ -3,7 +3,10 @@
 
 #include <stdbool.h>
 
-#include "utils.h"
+#define ENEMY_WIDTH 22
+#define ENEMY_HEIGHT 45
+
+#define PLAYER_SIZE 20 
 
 /*
  * Definições dos tipos e funções
@@ -23,12 +26,12 @@
 typedef struct game_object GameObject;
 struct game_object {
     int id;
-    int pos_x;
-    int pos_y;
-    int width;
-    int height;
-    double velocity;
-    HexColor color;
+    float x;
+    float y;
+    float width;
+    float height;
+    float velocity;
+    float r, g, b;
 };
 
 /*
@@ -37,7 +40,6 @@ struct game_object {
 typedef enum game_event GameEvent;
 enum game_event { NullEvent, DeadEvent, MoveEvent, WinEvent };
 
-typedef GameEvent ObjectUpdater(GameObject *, void *);
 
 /*
  * Define os tipos de movimento que um jogado pode fazer.
@@ -45,12 +47,9 @@ typedef GameEvent ObjectUpdater(GameObject *, void *);
 typedef enum move_direction MoveDirection;
 enum move_direction { MoveUp, MoveDown, MoveLeft, MoveRight };
 
-GameObject *NewGameObject(int id, int pos_x, int pos_y, int width, int height,
-                          double velocity, HexColor color);
+GameObject *NewGameObject(int id, float x, float y, float w, float h, float v, float r, float g, float b);
 void DestroyGameObject(GameObject **obj);
 
 bool Collision(GameObject *obj1, GameObject *obj2);
-
-GameEvent UpdateObject(GameObject *obj, void *data, ObjectUpdater *updater);
 
 #endif

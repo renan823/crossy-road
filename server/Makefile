@@ -3,7 +3,7 @@ CFLAGS = -Wall -Iinclude -std=c2x -lpthread
 OBJDIR = build
 SRCDIR = src
 
-TARGET = program
+TARGET = server
 
 SOURCES = $(wildcard $(SRCDIR)/*.c)
 OBJECTS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SOURCES))

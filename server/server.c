@@ -6,8 +6,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "net.h"
-#include "semaphores.h"
+#include "../libs/include/net.h"
+#include "../libs/include/semaphores.h"
 #include "threads.h"
 
 #include "server.h"
@@ -36,6 +36,7 @@ struct server {
     bool logging;
     SocketAddress *address;
     ServerHandler *handler;
+    ServerWorker *worker;
     void *context;
 };
 
@@ -60,6 +61,8 @@ struct handler_context {
  * um semáforo são enviados ao handler do usuário.
  *
  * Cabe ao usuário usar esses dados como for melhor.
+ * 
+ * Cabe ao usuário fechar (ou não) a conexão com client.
  */
 void *_HandleClient(void *handler_ctx, Semaphore *semaphore) {
     // Pega os dados como contexto
@@ -67,9 +70,6 @@ void *_HandleClient(void *handler_ctx, Semaphore *semaphore) {
 
     // Chama a função do usuário
     context->handler(context->client, context->data, semaphore);
-    
-    // Fecha o cliente
-    close(context->client);
 
     return NULL;
 }
@@ -150,6 +150,19 @@ void ServerRegisterHandler(Server *server, ServerHandler *handler) {
 }
 
 /*
+ * Define uma função executada em loop,
+ * mesmo quando não há requisições.
+ * Pode ser usada pra atualizar algum estado interno, etc.
+ */
+void ServerRegisterWorker(Server *server, ServerWorker *worker) {
+    if (server == NULL) {
+        return;
+    }
+
+    server->worker = worker;
+}
+
+/*
  * Inicia o servidor e faz
  * ele "ouvir" na porta especificada.
  */
@@ -159,7 +172,7 @@ void ServerListen(Server *server) {
     }
 
     // Bind
-    if (bind(server->socket, (struct sockaddr *) server->address,
+    if (bind(server->socket, (struct sockaddr *)server->address,
              sizeof(*server->address)) < 0) {
         return;
     }
@@ -170,11 +183,11 @@ void ServerListen(Server *server) {
     }
 
     if (server->logging) {
-	   	char *info = GetSocketAddressInfo(server->address);
-	    if (info != NULL) {
-	        printf("[SERVER] Server running on %s\n", info);
-	        free(info);
-	    }
+        char *info = GetSocketAddressInfo(server->address);
+        if (info != NULL) {
+            printf("[SERVER] Server running on %s\n", info);
+            free(info);
+        }
     }
 
     // Endereço para o cliente conectar
@@ -191,6 +204,10 @@ void ServerListen(Server *server) {
 
     // Loop para receber as conexões
     while (true) {
+        // Worker padrão do servidor
+        if (server->worker) {
+        	server->worker(semaphore, server->context);
+        }
 
         // Nova conexão
         int client_socket =
@@ -217,7 +234,7 @@ void ServerListen(Server *server) {
 
         // Executa a thread
         RunThread(worker);
-        
+
         // Se permitir print (logs), mostra a conexão
         if (server->logging) {
             char *info = GetSocketAddressInfo(&address);
@@ -226,7 +243,7 @@ void ServerListen(Server *server) {
                 free(info);
             }
         }
-        
+
         // Encerra a conexão após atender
         DestroyThread(&worker);
     }

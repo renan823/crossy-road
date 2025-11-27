@@ -39,6 +39,7 @@ typedef struct {
     float width, height;
     float r, g, b;
     int active;
+    float velocity;
 } Car;
 
 Player p1, p2;
@@ -64,6 +65,14 @@ void spawnCars() {
                 // Posição vertical aleatória
                 c->y = rand() % (WINDOW_HEIGHT - CAR_HEIGHT);
                 
+                // Velocidade
+                int v = 0.01f + (rand() % 8) * 0.01f;
+                if (rand() % 2 == 0) {
+                	c->velocity = -0.1;
+                } else {
+                	c->velocity = 0.1;
+                }
+                
                 c->width = CAR_WIDTH;
                 c->height = CAR_HEIGHT;
                 c->active = 1;
@@ -75,6 +84,10 @@ void spawnCars() {
             }
         }
     }
+}
+
+void idle() {
+    glutPostRedisplay();
 }
 
 // Função de inicialização da janela do OpenGL
@@ -147,6 +160,21 @@ void display() {
 
     // 2. Desenhar Carros (Novo)
     for (int i = 0; i < total_cars; i++) {
+    	cars[i].y += cars[i].velocity;
+    
+   		// Verificar se saiu da tela
+        if (cars[i].y + cars[i].height < 0 || cars[i].y > WINDOW_HEIGHT) {
+       		if (cars[i].velocity > 0) {
+         		cars[i].y = -cars[i].height;
+            } else {
+                cars[i].y = WINDOW_HEIGHT;
+            }
+        }
+        
+       
+        
+        cars[i].active = 1;
+    
         if (cars[i].active) {
             drawRect(cars[i].x, cars[i].y, cars[i].width, cars[i].height, 
                      cars[i].r, cars[i].g, cars[i].b);
@@ -166,6 +194,8 @@ int main(int argc, char** argv) {
     p1.x = (TILE_SIZE - PLAYER_SIZE) / 2.0; // Centralizado na faixa 0
     p1.y = (WINDOW_HEIGHT / 2.0) + 20;
     p1.r = 1.0; p1.g = 1.0; p1.b = 1.0;
+    
+    
 
     // P2 (Preto)
     p2.x = (TILE_SIZE - PLAYER_SIZE) / 2.0; // Centralizado na faixa 0
@@ -182,6 +212,7 @@ int main(int argc, char** argv) {
     init(); 
 
     glutDisplayFunc(display);
+    glutIdleFunc(idle);
     
     glutMainLoop();
     return 0;

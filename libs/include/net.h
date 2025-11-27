@@ -11,6 +11,7 @@
 typedef struct sockaddr_in SocketAddress;
 
 int NewSocket(void);
+int ConnectSocket(int socket, int port);
 
 SocketAddress *NewSocketAdress(int port);
 char *GetSocketAddressInfo(SocketAddress *address);

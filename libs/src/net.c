@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 
 #include "net.h"
 
@@ -25,6 +26,29 @@ int NewSocket(void) {
     }
     
     return sock;
+}
+
+/*
+ * Conecta um scoket cliente ao servidor.
+ */
+int ConnectSocket(int socket, int port) {
+	// Endereço do servidor
+	SocketAddress *addr = NewSocketAdress(port);
+	
+	if (inet_pton(AF_INET, "127.0.0.1", &addr->sin_addr) < 0) {
+		printf("Invalid server address\n");
+		return -1;
+	}
+	
+	// Estabelece conexão
+	if (connect(socket, (struct sockaddr*)addr, sizeof(*addr)) < 0) {
+		printf("Connection failed\n");
+		return -1;
+	}
+	
+	printf("Connected!\n");
+	
+	return 0;
 }
 
 /*
