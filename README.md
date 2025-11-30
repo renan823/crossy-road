@@ -1,5 +1,11 @@
 # Crossy Road Multiplayer
 
+### Alunos
+<ul>
+  <li>Pedro Bizon Dania (11812667)</li>
+  <li>Renan Trofino Silva (15522316)</li>
+</ul>
+
 ### O jogo
 <p>O jogo consiste em atravessar as ruas e desviar dos carros. O player que alcançar o outro lado primeiro, ganha.</p>
 
