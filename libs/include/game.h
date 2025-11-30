@@ -10,30 +10,23 @@
 #include "map.h"
 #include "object.h"
 
-#define WINDOW_WIDTH 600
-#define WINDOW_HEIGHT 600
-
-// Faixas de terreno 
-#define NUM_COLS (WINDOW_WIDTH / TILE_SIZE)
-
-#define PLAYER_SIZE 20 
-
-// Dimensões do Carro
-#define CAR_WIDTH 22
-#define CAR_HEIGHT 45
-
 typedef struct game_context GameContext;
 struct game_context {
-	GameMap *map;
-	GameObject *p1;
-	GameObject *p2;
+	GameMap map;
+	GameObject p1;
+	GameObject p2;
 	int sockets[2];
 	int player_count;
+	int winner;
 };
 
 GameContext *NewGameContext();
 void DestroyGameContext(GameContext **ctx);
 
 void UpdateEnemies(GameContext *ctx);
+int AddPlayer(GameContext *ctx, int socket);
+void RemovePlayer(GameContext *ctx, int client);
+void ResetPlayer(GameContext *ctx, int socket);
+void MovePlayer(GameContext *ctx, int socket, MoveDirection direction);
 
 #endif

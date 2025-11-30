@@ -1,4 +1,3 @@
-#include <GL/freeglut_std.h>
 #include <GL/gl.h>
 #include <GL/glut.h>
 #include <stdlib.h>
@@ -47,6 +46,21 @@ void _DrawDashedLine(float x, float y1, float y2) {
 }
 
 /*
+ * Escreve um texto na tela
+ */
+void _DrawText(float x, float y, const char *text) {
+    glColor3f(1.0, 1.0, 1.0); // branco
+
+    glRasterPos2f(x, y);
+
+    while (*text) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *text);
+        text++;
+    }
+}
+
+
+/*
  * Define a função idle do opengl
  */
 void _Idle(void) {
@@ -79,6 +93,13 @@ void InitScreen(int argc, char *argv[], void (*display) (void)) {
 }
 
 /*
+ * Define a função que lida com teclas.
+ */
+void SetScreenKeybinds(void (*func)(unsigned char key, int x, int y)) {
+	glutKeyboardFunc(func);
+}
+
+/*
  * Manda pra GPU
  */
 void FlushScreen(void) {
@@ -89,6 +110,7 @@ void FlushScreen(void) {
  * Limpa a tela
  */
 void ClearScreen(void) {
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -107,16 +129,16 @@ void DrawMap(GameMap *map) {
 		return;
 	}
 	
-	for (int i = 0; i < map->size; i++) {
+	for (int i = 0; i < NUM_COLS; i++) {
         float x_pos = i * TILE_SIZE;
         
-        if (map->tiles[i] == GrassTile) {
-            // Grama
-            _DrawRect(x_pos, 0, TILE_SIZE, WINDOW_HEIGHT, 0.0, 0.5, 0.0);
+        if (map->tiles[i] == RoadTile) {
+	       	// Asfalto + linha amarela
+	        _DrawRect(x_pos, 0, TILE_SIZE, WINDOW_HEIGHT, 0.3, 0.3, 0.3);
+	        _DrawDashedLine(x_pos + (TILE_SIZE / 2), 0, WINDOW_HEIGHT);
         } else {
-            // Asfalto + linha amarela
-            _DrawRect(x_pos, 0, TILE_SIZE, WINDOW_HEIGHT, 0.3, 0.3, 0.3);
-            _DrawDashedLine(x_pos + (TILE_SIZE / 2), 0, WINDOW_HEIGHT);
+	        // Grama
+	        _DrawRect(x_pos, 0, TILE_SIZE, WINDOW_HEIGHT, 0.0, 0.5, 0.0);
         }
     }
 }
@@ -129,8 +151,8 @@ void DrawEnemies(GameMap *map) {
 		return;
 	}
 	
-	for (int i = 0; i < map->enemies_count; i++) {
-		GameObject *enemy = map->enemies[i];
+	for (int i = 0; i < NUM_ENEMIES; i++) {
+		GameObject *enemy = &map->enemies[i];
 		
 	 	_DrawRect(enemy->x, enemy->y, enemy->width, enemy->height, 
 				enemy->r, enemy->g, enemy->b);
@@ -145,6 +167,40 @@ void DrawPlayers(GameContext *ctx) {
 		return;
 	}
 	
-	_DrawRect(ctx->p1->x, ctx->p1->y, PLAYER_SIZE, PLAYER_SIZE, ctx->p1->r, ctx->p1->g, ctx->p1->b);
-    _DrawRect(ctx->p2->x, ctx->p2->y, PLAYER_SIZE, PLAYER_SIZE, ctx->p2->r, ctx->p2->g, ctx->p2->b);
+	_DrawRect(ctx->p1.x, ctx->p1.y, PLAYER_SIZE, PLAYER_SIZE, ctx->p1.r, ctx->p1.g, ctx->p1.b);
+    _DrawRect(ctx->p2.x, ctx->p2.y, PLAYER_SIZE, PLAYER_SIZE, ctx->p2.r, ctx->p2.g, ctx->p2.b);
+}
+
+/*
+ * Tela de loading enquanto
+ * espera por outro player.
+ */
+void DrawLoading(void) {
+	char msg[] = "Aguardando outro jogador...";
+    float x = WINDOW_WIDTH / 2 - 100;
+    float y = WINDOW_HEIGHT / 2;
+    
+    _DrawText(x, y, msg);
+}
+
+/*
+ * Tela de vitória
+ */
+void DrawWin(void) {
+	char msg[] = "Voce venceu!";
+    float x = WINDOW_WIDTH / 2 - 100;
+    float y = WINDOW_HEIGHT / 2;
+    
+    _DrawText(x, y, msg);
+}
+
+/*
+ * Tela de derrota.
+ */
+void DrawLose(void) {
+	char msg[] = "Voce perdeu!";
+    float x = WINDOW_WIDTH / 2 - 100;
+    float y = WINDOW_HEIGHT / 2;
+    
+    _DrawText(x, y, msg);
 }

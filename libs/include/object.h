@@ -35,21 +35,26 @@ struct game_object {
 };
 
 /*
- * Define os eventos do jogo.
- */
-typedef enum game_event GameEvent;
-enum game_event { NullEvent, DeadEvent, MoveEvent, WinEvent };
-
-
-/*
  * Define os tipos de movimento que um jogado pode fazer.
  */
 typedef enum move_direction MoveDirection;
 enum move_direction { MoveUp, MoveDown, MoveLeft, MoveRight };
 
-GameObject *NewGameObject(int id, float x, float y, float w, float h, float v, float r, float g, float b);
-void DestroyGameObject(GameObject **obj);
+typedef enum event_type EventType;
+enum event_type { ConnectEvent, DisconnecEvent, MoveEvent };
+
+/*
+ * Define os eventos do jogo.
+ */
+typedef struct game_event GameEvent;
+struct game_event {
+	MoveDirection direction;
+	EventType type;
+};
 
 bool Collision(GameObject *obj1, GameObject *obj2);
+
+bool Move(GameObject *obj, MoveDirection direction);
+void UnMove(GameObject *obj, MoveDirection direction);
 
 #endif

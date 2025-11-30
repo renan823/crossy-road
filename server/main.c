@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "server.h"
 #include <stdlib.h>
 
 /*
@@ -8,9 +8,12 @@
  * mesmo sem interação do player.
  */
 int main(int argc, char *argv[]) {
-	
-	
-	
-	
+	Server *server = StartServer(3000);
+	if (server == NULL) {
+		exit(1);
+	}
+
+	ServerListen(server);
+
 	return 0;
 }

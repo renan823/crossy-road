@@ -20,7 +20,7 @@ void _LoadEnemies(GameMap *map) {
 
     int total = 0;
 
-    for (int i = 0; i < map->size; i++) {
+    for (int i = 0; i < NUM_COLS; i++) {
         // Ignora tiles que não são rua
         if (map->tiles[i] != RoadTile) {
             continue;
@@ -39,14 +39,19 @@ void _LoadEnemies(GameMap *map) {
         for (int j = 0; j < 2; j++) {
             // Posições
             float x = (i * TILE_SIZE) + ((TILE_SIZE - ENEMY_WIDTH) / 2.0);
-            float y = rand() % (map->height - ENEMY_HEIGHT);
+            float y = rand() % (WINDOW_HEIGHT - ENEMY_HEIGHT);
 
             // Novo inimigo
-            GameObject *enemy =
-                NewGameObject(-1, x, y, ENEMY_WIDTH, ENEMY_HEIGHT, velocity,
-                              1.0f, 0.0f, 0.0f);
-
-            map->enemies[total] = enemy;
+            map->enemies[total].id = -1;
+            map->enemies[total].x = x;
+            map->enemies[total].y = y;
+            map->enemies[total].width = ENEMY_WIDTH;
+            map->enemies[total].height = ENEMY_HEIGHT;
+            map->enemies[total].velocity = velocity;
+            map->enemies[total].r = 1.0f;
+            map->enemies[total].g = 0.0f;
+            map->enemies[total].b = 0.0f;
+            
             total++;
         }
     }
@@ -67,7 +72,7 @@ void _LoadTerrain(GameMap *map) {
 
     // Primeria e ultima faixa sempre seguras
     map->tiles[0] = GrassTile;
-    map->tiles[map->size - 1] = EndTile;
+    map->tiles[NUM_COLS - 1] = EndTile;
 
     // Controle
     int maxGrass = 2;
@@ -77,7 +82,7 @@ void _LoadTerrain(GameMap *map) {
     int roadStreak = 0;
 
     // Alternar entre rua e grama
-    for (int i = 1; i < map->size - 1; i++) {
+    for (int i = 1; i < NUM_COLS - 1; i++) {
         int r = rand() % 100; // 0–99
 
         // Muitas ruas -> vai pra grama
@@ -113,28 +118,13 @@ void _LoadTerrain(GameMap *map) {
 /*
  * Cria um novo mapa com terreno e inimigos.
  */
-GameMap *LoadMap(int width, int height, int size) {
+GameMap *LoadMap() {
     GameMap *map = (GameMap *)malloc(sizeof(GameMap));
     if (map == NULL) {
         return NULL;
     }
 
-    map->width = width;
-    map->height = height;
-
-    // Carrega terreno
-    map->size = size;
-    map->tiles = (GameMapTile *)malloc(sizeof(GameMapTile) * map->size);
     _LoadTerrain(map);
-
-    // Carrega inimigos (2 x faixa)
-    for (int i = 0; i < map->size; i++) {
-        if (map->tiles[i] == RoadTile) {
-            map->enemies_count += 2;
-        }
-    }
-
-    map->enemies = (GameObject **)malloc(sizeof(GameObject *) * map->size);
     _LoadEnemies(map);
 
     return map;
@@ -146,15 +136,6 @@ GameMap *LoadMap(int width, int height, int size) {
 void DestroyMap(GameMap **map) {
     if (*map == NULL) {
         return;
-    }
-
-    // Desaloca os inimigos
-    if ((*map)->enemies != NULL) {
-        for (int i = 0; i < (*map)->enemies_count; i++) {
-            DestroyGameObject(&(*map)->enemies[i]);
-        }
-
-        free((*map)->enemies);
     }
 
     free(*map);

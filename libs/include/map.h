@@ -8,7 +8,20 @@
  * para manipular mapas do jogo.
  */
 
- #define TILE_SIZE 30 
+#define WINDOW_WIDTH 600
+#define WINDOW_HEIGHT 600
+
+// Faixas de terreno
+#define TILE_SIZE 30
+#define NUM_COLS (WINDOW_WIDTH / TILE_SIZE)
+
+#define NUM_ENEMIES NUM_COLS * 2
+
+#define PLAYER_SIZE 20
+
+// Dimensões do Carro
+#define CAR_WIDTH 22
+#define CAR_HEIGHT 45
 
 /*
  * Define o tipo de "chão" que player está.
@@ -30,15 +43,11 @@ enum map_tile { GrassTile, RoadTile, EndTile };
  */
 typedef struct game_map GameMap;
 struct game_map {
-	int width;
-    int height;
-    int size;
-    GameMapTile *tiles;
-    int enemies_count;
-    GameObject **enemies;
+    GameMapTile tiles[NUM_COLS];
+    GameObject enemies[NUM_ENEMIES];
 };
 
-GameMap *LoadMap(int width, int height, int size);
+GameMap *LoadMap();
 void DestroyMap(GameMap **map);
 
 #endif

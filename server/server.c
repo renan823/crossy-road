@@ -1,3 +1,6 @@
+// pra usar nanosleep
+#define _POSIX_C_SOURCE 199309L
+
 #include <arpa/inet.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -5,71 +8,129 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <time.h>
 
+#include "../libs/include/game.h"
 #include "../libs/include/net.h"
 #include "../libs/include/semaphores.h"
-#include "threads.h"
+#include "../libs/include/threads.h"
+#include "object.h"
 
 #include "server.h"
 
+#define MAX_CONS 2
+
 /*
- * Define a struct "Server".
  *
- * Armazena o socket UNIX para
- * conexão e criar o servidor
- * usando TCP.
- *
- * O "ServerHandler" é a função
- * que vai lidar com requisições
- * dos clientes.
- * É o user que define essa função.
- *
- * O "context" define variáveis de
- * ambiente que o usuário pode
- * querer usar e passar pro
- * "handler".
  */
 struct server {
     int socket;
     int port;
-    int cons;
-    bool logging;
     SocketAddress *address;
-    ServerHandler *handler;
-    ServerWorker *worker;
-    void *context;
+    GameContext *ctx;
 };
 
-/*
- * Define um pacote de dados que é
- * passado pela thread e usado pelo
- * handler do usuário.
- */
 typedef struct handler_context HandlerContext;
 struct handler_context {
     int client;
-    void *data;
-    ServerHandler *handler;
+    GameContext *ctx;
 };
 
 /*
- * Executa de fato a função especificada
- * pelo usuário para manipular uma
- * requisição feito ao servidor.
- *
- * O socket do cliente, dados (ambiente) e
- * um semáforo são enviados ao handler do usuário.
- *
- * Cabe ao usuário usar esses dados como for melhor.
- * 
- * Cabe ao usuário fechar (ou não) a conexão com client.
+ * Para executar mais "liso"
  */
-void *_HandleClient(void *handler_ctx, Semaphore *semaphore) {
-    // Pega os dados como contexto
-    HandlerContext *context = (HandlerContext *)handler_ctx;
+void _Sleep(long ms) {
+    struct timespec ts;
+    ts.tv_sec = ms / 1000;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+    nanosleep(&ts, NULL);
+}
 
-    // Chama a função do usuário
-    context->handler(context->client, context->data, semaphore);
+/*
+ * Lida com as requisições do cliente.
+ */
+void *_Handler(void *data, Semaphore *semaphore) {
+    HandlerContext *ctx = (HandlerContext *)data;
+    GameEvent event;
+
+    while (1) {
+        ssize_t n = recv(ctx->client, &event, sizeof(event), 0);
+
+        // Cliente desconectou
+        if (n == 0) {
+            printf("Cliente %d desconectou\n", ctx->ctx->sockets[0] == ctx->client ? ctx->ctx->p1.id : ctx->ctx->p2.id);
+            
+            // Remover client
+            SemaphoreLock(semaphore);
+            RemovePlayer(ctx->ctx, ctx->client);
+            SemaphoreUnlock(semaphore);
+            
+            close(ctx->client);
+            free(ctx);
+            return NULL;
+        }
+
+        // Erro
+        if (n < 0) {
+            perror("recv");
+            close(ctx->client);
+            free(ctx);
+            return NULL;
+        }
+
+        SemaphoreLock(semaphore);
+
+        switch (event.type) {
+        case ConnectEvent:
+            if (ctx->ctx->player_count < MAX_CONS) {
+                int id = AddPlayer(ctx->ctx, ctx->client);
+                printf("Player %d conectado!\n", id);
+                // Dados do player
+                send(ctx->client, &id, sizeof(int), 0);
+                
+                // Dados do mapa
+                send(ctx->client, ctx->ctx, sizeof(*ctx->ctx), 0);
+            }
+            break;
+
+        case MoveEvent:
+            MovePlayer(ctx->ctx, ctx->client, event.direction);
+            break;
+
+        default:
+            break;
+        }
+
+        SemaphoreUnlock(semaphore);
+    }
+
+    return NULL;
+}
+
+/*
+ * Thread separada para dados do jogo.
+ * Fica inativa em certos tempos
+ * pra deixar mais fluido (tipo FPS)
+ */
+void *_GameWorker(void *data, Semaphore *semaphore) {
+    Server *server = (Server *)data;
+    GameContext *ctx = server->ctx;
+
+    while (1) {
+    	_Sleep(16); // Tipo 60 fps
+
+        if (ctx->player_count == 2) {
+
+            SemaphoreLock(semaphore);
+            UpdateEnemies(ctx);
+            SemaphoreUnlock(semaphore);
+
+            for (int i = 0; i < ctx->player_count; i++) {
+                int sock = ctx->sockets[i];
+                send(sock, ctx, sizeof(*ctx), 0);
+            }
+        }
+    }
 
     return NULL;
 }
@@ -77,11 +138,8 @@ void *_HandleClient(void *handler_ctx, Semaphore *semaphore) {
 /*
  * Cria um novo "Server" com a porta
  * especificada.
- * Os dados de contexto deve ser passados
- * como ponteiro "void*" - O user que
- * manda como vai lidar com isso :)
  */
-Server *StartServer(int port, int cons, bool logging, void *context) {
+Server *StartServer(int port) {
     Server *server = (Server *)malloc(sizeof(Server));
     if (server == NULL) {
         return NULL;
@@ -93,19 +151,12 @@ Server *StartServer(int port, int cons, bool logging, void *context) {
         return NULL;
     }
 
-    // Contexto (dados) para serem usados
-    server->context = context;
-
     // Porta e endereço
     server->address = NewSocketAdress(port);
     server->port = port;
-    server->cons = cons;
 
-    // Opções pra print de conexões
-    server->logging = logging;
-
-    // Por default, handler é NULL
-    server->handler = NULL;
+    // Inica os dados do jogo
+    server->ctx = NewGameContext();
 
     return server;
 }
@@ -119,55 +170,23 @@ void StopServer(Server **server) {
         return;
     }
 
+    // Apagar ctx
+    DestroyGameContext(&(*server)->ctx);
+
     // Encerrar o socket
     close((*server)->socket);
 
     free(*server);
     *server = NULL;
 
-    printf("Server stopped\n");
+    printf("Servidor parado\n");
 }
 
 /*
- * Define a função que vai
- * lidar com as conexões de clientes.
- * Pode ser qualquer função que siga
- * o padrão do "ServerHandler".
- * Os dados do "context" são passados
- * pra essa função especificada pelo
- * user, assim pode mainuplar dados
- * como quiser.
  *
- * O handler é executado numa thread separada.
- * No handler está incluso um "Semaphore".
- */
-void ServerRegisterHandler(Server *server, ServerHandler *handler) {
-    if (server == NULL) {
-        return;
-    }
-
-    server->handler = handler;
-}
-
-/*
- * Define uma função executada em loop,
- * mesmo quando não há requisições.
- * Pode ser usada pra atualizar algum estado interno, etc.
- */
-void ServerRegisterWorker(Server *server, ServerWorker *worker) {
-    if (server == NULL) {
-        return;
-    }
-
-    server->worker = worker;
-}
-
-/*
- * Inicia o servidor e faz
- * ele "ouvir" na porta especificada.
  */
 void ServerListen(Server *server) {
-    if (server == NULL || server->handler == NULL) {
+    if (server == NULL || server->ctx == NULL) {
         return;
     }
 
@@ -178,36 +197,23 @@ void ServerListen(Server *server) {
     }
 
     // Ativando servidor
-    if (listen(server->socket, server->cons) < 0) {
+    if (listen(server->socket, MAX_CONS) < 0) {
         return;
     }
 
-    if (server->logging) {
-        char *info = GetSocketAddressInfo(server->address);
-        if (info != NULL) {
-            printf("[SERVER] Server running on %s\n", info);
-            free(info);
-        }
-    }
-
-    // Endereço para o cliente conectar
-    SocketAddress address;
-    socklen_t addrlen = sizeof(address);
+    printf("Servidor iniciado\n");
 
     // Semáforo para usar junto das threads.
     Semaphore *semaphore = NewSemaphore();
 
-    // Dados de contexto para o handler
-    // Só muda o cliente
-    HandlerContext handler_context = {
-        .handler = server->handler, .data = server->context, .client = 0};
+    // Thread para atualizar dados do jogo
+    Thread *gameThread = NewThread(_GameWorker, server, semaphore);
+    RunThread(gameThread);
 
-    // Loop para receber as conexões
     while (true) {
-        // Worker padrão do servidor
-        if (server->worker) {
-        	server->worker(semaphore, server->context);
-        }
+        // Endereço para o cliente conectar
+        SocketAddress address;
+        socklen_t addrlen = sizeof(address);
 
         // Nova conexão
         int client_socket =
@@ -216,36 +222,14 @@ void ServerListen(Server *server) {
             continue;
         }
 
-        /*
-         * Lida com a requisição do cliente
-         * criando uma nova thread para isso.
-         * Nova conexão = nova thread.
-         *
-         * No "ServerHandler" são passados dados
-         * e tbm a parte de gerenciar o contexto
-         * que inclui o semáforo (se necessário).
-         */
-        handler_context.client = client_socket;
+        // Context da thread
+        HandlerContext *ctx = malloc(sizeof(HandlerContext));
+        ctx->ctx = server->ctx;
+        ctx->client = client_socket;
 
-        Thread *worker = NewThread(_HandleClient, &handler_context, semaphore);
-        if (worker == NULL) {
-            continue;
-        }
-
-        // Executa a thread
+        // Cria thread para esse cliente
+        Thread *worker = NewThread(_Handler, ctx, semaphore);
         RunThread(worker);
-
-        // Se permitir print (logs), mostra a conexão
-        if (server->logging) {
-            char *info = GetSocketAddressInfo(&address);
-            if (info != NULL) {
-                printf("[SERVER] Connection from %s\n", info);
-                free(info);
-            }
-        }
-
-        // Encerra a conexão após atender
-        DestroyThread(&worker);
     }
 
     DestroySemaphore(&semaphore);

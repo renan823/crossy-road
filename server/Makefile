@@ -1,28 +1,23 @@
 CC = gcc
-CFLAGS = -Wall -Iinclude -std=c2x -lpthread
-OBJDIR = build
-SRCDIR = src
+CFLAGS = -Wall -std=c2x -O2 -I../libs/include
+
+SERVER_LIBS = \
+	../libs/src/semaphore.c \
+	../libs/src/threads.c \
+	../libs/src/object.c \
+	../libs/src/game.c \
+	../libs/src/map.c \
+	../libs/src/net.c \
+
+SRC = $(wildcard *.c)
+OBJ = $(SRC:.c=.o)
 
 TARGET = server
 
-SOURCES = $(wildcard $(SRCDIR)/*.c)
-OBJECTS = $(patsubst $(SRCDIR)/%.c, $(OBJDIR)/%.o, $(SOURCES))
-
 all: $(TARGET)
 
-$(TARGET): $(OBJECTS)
-	$(CC) $(OBJECTS) -o $@
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
+$(TARGET): $(OBJ) $(SERVER_LIBS)
+	$(CC) $(CFLAGS) -o $@ $(OBJ) $(SERVER_LIBS)
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET) *.dat
-
-run:
-	./$(TARGET)
-
-.PHONY: all clean
+	rm -f *.o $(TARGET)
