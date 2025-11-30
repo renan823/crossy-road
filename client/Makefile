@@ -25,3 +25,6 @@ $(TARGET): $(OBJ) $(CLIENT_LIBS)
 
 clean:
 	rm -f *.o $(TARGET)
+
+run:
+	./$(TARGET)

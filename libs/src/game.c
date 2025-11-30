@@ -40,6 +40,15 @@ void UpdateEnemies(GameContext *ctx) {
         GameObject *enemy = &ctx->map.enemies[i];
 
         enemy->y += enemy->velocity;
+        
+        // Verificar colisão carro player
+        if (Collision(enemy, &ctx->p1)) {
+       		ResetPlayer(ctx, ctx->sockets[0]);
+        }
+        
+        if (Collision(enemy, &ctx->p2)) {
+       		ResetPlayer(ctx, ctx->sockets[1]);
+        }
 
         // Verificar se saiu da tela
         if (enemy->y + enemy->height < 0 || enemy->y > WINDOW_HEIGHT) {

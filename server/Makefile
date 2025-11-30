@@ -21,3 +21,6 @@ $(TARGET): $(OBJ) $(SERVER_LIBS)
 
 clean:
 	rm -f *.o $(TARGET)
+
+run:
+	./$(TARGET)

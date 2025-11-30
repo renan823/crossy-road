@@ -58,7 +58,7 @@ void *_Handler(void *data, Semaphore *semaphore) {
 
         // Cliente desconectou
         if (n == 0) {
-            printf("Cliente %d desconectou\n", ctx->ctx->sockets[0] == ctx->client ? ctx->ctx->p1.id : ctx->ctx->p2.id);
+            printf("Player %d desconectou\n", ctx->ctx->sockets[0] == ctx->client ? ctx->ctx->p1.id : ctx->ctx->p2.id);
             
             // Remover client
             SemaphoreLock(semaphore);
@@ -72,7 +72,13 @@ void *_Handler(void *data, Semaphore *semaphore) {
 
         // Erro
         if (n < 0) {
-            perror("recv");
+        	printf("Player %d desconectou\n", ctx->ctx->sockets[0] == ctx->client ? ctx->ctx->p1.id : ctx->ctx->p2.id);
+         
+            // Remover client
+            SemaphoreLock(semaphore);
+            RemovePlayer(ctx->ctx, ctx->client);
+            SemaphoreUnlock(semaphore);
+            
             close(ctx->client);
             free(ctx);
             return NULL;
