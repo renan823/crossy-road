@@ -35,3 +35,5 @@ Acesse a pasta do cliente `client/`. Então, execute:
 ```
 make && make run
 ```
+
+Para mover o player, use as teclas WASD.
