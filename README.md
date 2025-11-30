@@ -29,14 +29,21 @@ para gerenciar a comunicação com o servidor, aguardado atualizações do estad
 
 
 ### Para executar
+Para a execução da interface, é necessário ter instalados os pacotes
+gráficos do FreeGLUT.
+Em distros Linux, é necessário instalar:
+```
+freeglut3 freeglut3-dev
+```
+</br>
+
 Acesse a pasta do servidor `server/`. Então, execute:
 ```
 make && make run
 ```
 </br>
 
-Cada player deve acessar um cliente.
-</br>
+Cada player deve acessar um cliente.</br>
 Acesse a pasta do cliente `client/`. Então, execute:
 ```
 make && make run
